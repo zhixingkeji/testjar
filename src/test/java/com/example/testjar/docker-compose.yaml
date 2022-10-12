@@ -1,0 +1,63 @@
+version: "3"
+services:
+
+  #部署jar包测试成功
+  # 项目名称
+  gourd-hu-service:
+    # 指定容器名称
+    container_name: test
+    # 重启机制
+    restart: always
+    image: java:8
+    volumes:
+      # 本地jar包路径
+      - /root/java/test/test.jar.jar:/test.jar.jar
+      # 挂载日志 -v A:B ,A指宿主机位置，B指容器位置
+      - ./logs:/logs
+      # 指定容器时间为宿主机时间
+      - /etc/localtime:/etc/localtime
+    # 访问端口
+    ports:
+      - "8090:8090"
+    environment:
+      # 指定时区
+      - TZ="Asia/Shanghai"
+    #启动容器后执行的命令
+    entrypoint: java -server -Xms256m -Xmx256m -jar -Dserver.port=8090 -Dspring.profiles.active=local test.jar.jar
+
+
+  # 部署redis 等待测试
+  redis:
+    image: redis
+    restart: always
+    container_name: my_redis
+    # Redis 的密码需要自己在与容器共享的配置 redis.conf 中加入，即更改配置中 requirepass yourpassword
+    command: redis-server /Users/mac/Documents/DockerHome/app/redis/conf/redis.conf
+    # 直接在其所在目录下执行 docker-compose up -d，即可在 Docker 中生成一个带密码的 Redis 容器。
+#   command: redis-server --requirepass 123456
+    ports:
+      - "6379:6379"
+    volumes:
+      - /Users/mac/Documents/DockerHome/app/redis/data:/data
+      - /Users/mac/Documents/DockerHome/app/redis/conf/redis.conf:/usr/local/etc/redis/redis.conf
+      # 容器与宿主机时间同步
+      - /etc/localtime:/etc/localtime
+    environment:
+      TIME_ZONE: Asia/Beijing
+
+
+  # 部署mysql 等待测试
+  mysql57:
+    image: mysq
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=123
+    volumes:
+      - /Users/mac/Documents/DockerHome/app/mysql/data:/var/lib/mysql
+    deploy:
+      placement:
+        constraints:
+          - node.hostname==mysqld
+      restart_policy:
+        condition: on-failure
